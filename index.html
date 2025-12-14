@@ -1,0 +1,897 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  ArrowRight, CheckCircle, RefreshCw, Undo2,
+  Lightbulb, Coffee, CloudRain, Image as ImageIcon, 
+  BookOpen, Layers, MapPin, User, Activity, Clock, 
+  GraduationCap, Play, ToggleLeft, ToggleRight, Sparkles, MousePointer2, Check, XCircle, Info, Star,
+  Heart, ShoppingBasket, ShoppingBag, Utensils
+} from 'lucide-react';
+
+// ==========================================
+// 💡 子元件：戰前訣竅卡 (Tips View)
+// ==========================================
+const TipsView = ({ onNext }) => {
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-6 flex flex-col items-center justify-center animate-fade-in">
+      <div className="max-w-3xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 flex flex-col">
+        
+        {/* 標題區 */}
+        <div className="bg-amber-500 p-6 text-white text-center relative overflow-hidden">
+           <div className="absolute top-0 left-0 w-full h-full bg-white/10 transform -skew-y-6 origin-top-left"></div>
+           <h2 className="text-2xl font-bold relative z-10 flex items-center justify-center gap-2">
+             <Star className="w-6 h-6 fill-current text-yellow-200" /> 
+             30秒高分回答訣竅
+           </h2>
+           <p className="opacity-90 mt-2 relative z-10 text-amber-50">在開始練習前，請先記住這三招！</p>
+        </div>
+        
+        {/* 內容區 */}
+        <div className="p-6 md:p-10 space-y-8">
+           {/* Tip 1 */}
+           <div className="flex gap-5 items-start group">
+             <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xl shrink-0 shadow-sm group-hover:scale-110 transition-transform">1</div>
+             <div>
+               <h3 className="font-bold text-lg text-slate-800 mb-1">第一句公式：主角 + 地點 + 氛圍</h3>
+               <p className="text-slate-600 leading-relaxed text-sm md:text-base">
+                 不要只說 "I see a girl."。<br/>
+                 試著一口氣說完： "I see <span className="text-blue-600 font-bold">a girl</span> in <span className="text-blue-600 font-bold">a cafe</span> on <span className="text-blue-600 font-bold">a sunny day</span>."
+               </p>
+             </div>
+           </div>
+
+           {/* Tip 2 */}
+           <div className="flex gap-5 items-start group">
+             <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xl shrink-0 shadow-sm group-hover:scale-110 transition-transform">2</div>
+             <div>
+               <h3 className="font-bold text-lg text-slate-800 mb-1">觀察順序：焦點 ➔ 細節 ➔ 想像</h3>
+               <p className="text-slate-600 leading-relaxed text-sm md:text-base">
+                 先看中間的人 <span className="bg-purple-50 text-purple-700 px-1 rounded">做什麼</span> (Action)，<br/>
+                 再看旁邊 <span className="bg-purple-50 text-purple-700 px-1 rounded">有什麼</span> (Detail)，<br/>
+                 最後加上 "I imagine..." 來推測 <span className="bg-purple-50 text-purple-700 px-1 rounded">關係</span>。
+               </p>
+             </div>
+           </div>
+
+           {/* Tip 3 */}
+           <div className="flex gap-5 items-start group">
+             <div className="w-12 h-12 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center font-bold text-xl shrink-0 shadow-sm group-hover:scale-110 transition-transform">3</div>
+             <div>
+               <h3 className="font-bold text-lg text-slate-800 mb-1">溫馨結尾：善用對比 (Contrast)</h3>
+               <p className="text-slate-600 leading-relaxed text-sm md:text-base">
+                 用 "Although..." (雖然環境...) "But..." (但是感覺...) 來製造反差。<br/>
+                 例如：雖然外面下雨，但心裡很溫暖。
+               </p>
+             </div>
+           </div>
+        </div>
+
+        {/* 按鈕區 */}
+        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-center">
+           <button 
+             onClick={onNext} 
+             className="px-8 py-3 bg-slate-800 text-white rounded-full font-bold hover:bg-slate-700 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 transform active:scale-95"
+           >
+             記住了，開始練習！ <ArrowRight className="w-5 h-5" />
+           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 🎓 子元件：課前導讀 (Tutorial)
+// ==========================================
+const TutorialView = ({ onFinish }) => {
+  const [step, setStep] = useState(1);
+  const [highlightedBone, setHighlightedBone] = useState(null); 
+  const [boneFeedback, setBoneFeedback] = useState(null); 
+  const [quizState, setQuizState] = useState(null); 
+  const [modifiers, setModifiers] = useState({ time: false, adj: false, adv: false, place: false });
+
+  const handleBoneClick = (bone) => {
+    setHighlightedBone(bone);
+    let feedback = {};
+    if (bone === 's') {
+      feedback = { title: "Who (主詞)", desc: "句子的「主角」，也就是「誰」在做這件事。", example: "例如：The boy, I, My father...", color: "blue", borderColor: "border-blue-200", bgColor: "bg-blue-50", textColor: "text-blue-700" };
+    } else if (bone === 'v') {
+      feedback = { title: "Action (動作/動詞)", desc: "句子的「心臟」，描述主角「做」了什麼。", example: "例如：eats, runs, is...", color: "red", borderColor: "border-red-200", bgColor: "bg-red-50", textColor: "text-red-700" };
+    } else if (bone === 'o') {
+      feedback = { title: "What/Whom (受詞)", desc: "接受動作的對象。", example: "例如：an apple, basketball...", color: "green", borderColor: "border-green-200", bgColor: "bg-green-50", textColor: "text-green-700" };
+    }
+    setBoneFeedback(feedback);
+    setTimeout(() => setHighlightedBone(null), 800);
+  };
+
+  const handleQuizAnswer = (answer) => {
+    if (answer === 'eats') { setQuizState('correct'); } else { setQuizState('wrong'); setTimeout(() => setQuizState(null), 1500); }
+  };
+
+  const toggleModifier = (key) => { setModifiers(prev => ({ ...prev, [key]: !prev[key] })); };
+
+  return (
+    <div className="min-h-screen bg-indigo-50 p-4 md:p-6 flex flex-col items-center justify-center animate-fade-in">
+      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 flex flex-col min-h-[600px]">
+        <div className="bg-indigo-600 p-6 text-white flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl"><GraduationCap className="w-6 h-6" /></div>
+            <div><h2 className="text-xl font-bold tracking-wide">課前導讀：英文造句邏輯</h2><div className="flex items-center gap-2 text-indigo-200 text-sm mt-1"><span>{step === 1 ? "Part 1: 基礎骨架" : "Part 2: 擴句層次"}</span></div></div>
+          </div>
+          <button onClick={onFinish} className="text-sm font-medium hover:text-indigo-200 underline opacity-80 hover:opacity-100 transition-opacity">跳過教學</button>
+        </div>
+        <div className="flex-1 p-6 md:p-10 flex flex-col items-center justify-center relative overflow-y-auto">
+          {step === 1 && (
+            <div className="w-full max-w-2xl space-y-6 text-center animate-slide-up">
+              <div className="space-y-3"><h2 className="text-3xl font-bold text-slate-800">句子的基本骨架</h2><p className="text-slate-500 text-lg">點擊下方的卡片，認識句子的三大核心</p></div>
+              <div className="flex flex-col md:flex-row items-center justify-center gap-4 py-4 select-none">
+                {['s', 'v', 'o'].map((bone) => (
+                  <div key={bone} onClick={() => handleBoneClick(bone)} className={`cursor-pointer group relative w-32 h-28 md:w-40 md:h-32 bg-white border-2 rounded-2xl flex flex-col items-center justify-center shadow-sm transition-all duration-300 ${highlightedBone === bone ? 'border-indigo-500 ring-4 ring-indigo-100 bg-indigo-50' : 'border-slate-200 hover:border-indigo-500 hover:shadow-md hover:-translate-y-1'}`}>
+                    <span className={`text-3xl md:text-4xl font-black mb-1 ${bone === 's' ? 'text-blue-600' : bone === 'v' ? 'text-red-500' : 'text-green-600'}`}>{bone === 's' ? 'Who' : bone === 'v' ? 'Action' : 'What'}</span>
+                    <span className="text-xs md:text-sm font-bold text-slate-400">{bone === 's' ? '主詞' : bone === 'v' ? '動作' : '受詞'}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="min-h-[100px] flex items-center justify-center">{boneFeedback ? (<div className={`w-full p-4 rounded-xl border-2 ${boneFeedback.borderColor} ${boneFeedback.bgColor} animate-fade-in text-left flex gap-4 items-start`}><div><h4 className={`font-bold text-lg ${boneFeedback.textColor} mb-1`}>{boneFeedback.title}</h4><p className="text-slate-700 text-sm">{boneFeedback.desc}</p></div></div>) : (<div className="text-slate-400 flex items-center gap-2 bg-slate-50 px-6 py-4 rounded-xl border border-slate-100 border-dashed animate-pulse"><MousePointer2 className="w-5 h-5" /> 請點擊上方的卡片</div>)}</div>
+              <hr className="border-slate-100 my-4" />
+              <div className="space-y-4"><p className="text-slate-600 font-bold flex items-center justify-center gap-2">小測驗：請點擊這句話的 <span className="text-red-500 bg-red-50 px-2 py-0.5 rounded border border-red-100">Action (動作)</span></p><div className="text-2xl md:text-3xl font-bold flex justify-center gap-4 font-mono text-slate-700"><button onClick={() => handleQuizAnswer('boy')} className="px-4 py-2 hover:bg-slate-100 rounded-xl transition-colors">The boy</button><button onClick={() => handleQuizAnswer('eats')} className={`px-4 py-2 rounded-xl transition-all ${quizState === 'correct' ? 'bg-red-500 text-white scale-110' : 'hover:bg-red-50'}`}>eats</button><button onClick={() => handleQuizAnswer('apple')} className="px-4 py-2 hover:bg-slate-100 rounded-xl transition-colors">an apple.</button></div></div>
+              <div className="pt-4"><button onClick={() => setStep(2)} disabled={quizState !== 'correct'} className={`px-8 py-3 rounded-full font-bold transition-all shadow-lg flex items-center gap-2 mx-auto ${quizState === 'correct' ? 'bg-slate-800 text-white animate-bounce' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>下一步 <ArrowRight className="w-4 h-4" /></button></div>
+            </div>
+          )}
+          {step === 2 && (
+            <div className="w-full max-w-4xl space-y-6 text-center animate-slide-up">
+              <div className="space-y-3"><h2 className="text-3xl font-bold text-slate-800">句子的組成層次</h2><p className="text-slate-500 text-lg">基本的句子很短，打開開關幫它加料！</p></div>
+              <div className="py-6"><div className="bg-slate-800 border-4 border-slate-700 rounded-2xl p-8 md:p-12 shadow-2xl relative flex flex-wrap justify-center items-center gap-x-2 gap-y-4 text-2xl md:text-4xl font-medium leading-relaxed min-h-[220px] transition-all">
+                  {modifiers.time && <span className="animate-pop-in text-purple-300 font-bold border-b-2 border-purple-300/30">On a sunny day,</span>}
+                  <span className="text-white">a</span>{modifiers.adj && <span className="animate-pop-in text-pink-300 font-bold border-b-2 border-pink-300/30">happy</span>}
+                  <span className="relative group cursor-default"><span className="text-white font-bold">dog</span><div className="h-1 w-full bg-blue-500 mt-1 rounded-full opacity-50"></div><span className="text-[10px] text-blue-400 font-bold absolute -bottom-5 left-1/2 -translate-x-1/2 uppercase tracking-widest">Who</span></span>
+                  <span className="relative group cursor-default ml-2"><span className="text-white font-bold">is running</span><div className="h-1 w-full bg-red-500 mt-1 rounded-full opacity-50"></div><span className="text-[10px] text-red-400 font-bold absolute -bottom-5 left-1/2 -translate-x-1/2 uppercase tracking-widest">Action</span></span>
+                  {modifiers.adv && <span className="animate-pop-in text-amber-300 font-bold border-b-2 border-amber-300/30 ml-2">excitedly</span>}
+                  {modifiers.place && <span className="animate-pop-in text-emerald-300 font-bold border-b-2 border-emerald-300/30 ml-2">in the park.</span>}
+              </div></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">{Object.keys(modifiers).map(key => (<button key={key} onClick={() => toggleModifier(key)} className="p-4 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-50 transition-all flex flex-col items-center gap-3 group active:scale-95"><div className={`w-14 h-8 rounded-full relative transition-colors duration-300 ${modifiers[key] ? 'bg-indigo-200' : 'bg-slate-200'}`}><div className={`w-6 h-6 bg-white rounded-full shadow-md border border-slate-200 absolute top-1 left-1 transition-transform duration-300 ${modifiers[key] ? 'translate-x-6 bg-indigo-600 border-indigo-600' : ''}`}></div></div><span className="font-bold text-sm text-slate-500">{key}</span></button>))}</div>
+              <div className="pt-8 pb-4"><button onClick={onFinish} className="w-full max-w-sm mx-auto py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg animate-bounce">開始實戰練習！</button></div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 🗺️ 子元件：寫作地圖 (Story Flow Tracker)
+// ==========================================
+const StoryFlow = ({ currentStep }) => {
+  const steps = [
+    { label: "現在畫面", icon: ImageIcon, tip: "客觀描述你看到的" },
+    { label: "我想像發生了什麼", icon: Sparkles, tip: "推測動作與關係" },
+    { label: "他們的感受", icon: Activity, tip: "描述心情與氛圍" },
+    { label: "溫馨結尾", icon: Star, tip: "給予正面總結" },
+  ];
+
+  return (
+    <div className="w-full bg-indigo-50/50 rounded-2xl border border-indigo-100 p-4 md:p-5 mb-4 animate-fade-in relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1 bg-indigo-100"></div>
+      
+      <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+        <MapPin className="w-3 h-3" /> 寫作導航 (Structure Map)
+      </h3>
+
+      <div className="flex justify-between items-start relative px-2">
+        {/* Progress Bar Background Line */}
+        <div className="absolute top-4 left-4 right-4 h-0.5 bg-slate-200 -z-0 rounded-full" />
+        
+        {/* Active Progress Line */}
+        <div 
+            className="absolute top-4 left-4 h-0.5 bg-indigo-500 -z-0 transition-all duration-500"
+            style={{ width: `${Math.min((currentStep / (steps.length - 1)) * 100, 100)}%` }} 
+        />
+
+        {steps.map((step, index) => {
+          const isActive = index === currentStep;
+          const isCompleted = index < currentStep;
+          const Icon = step.icon;
+
+          return (
+            <div key={index} className="relative z-10 flex flex-col items-center gap-2 group w-1/4">
+              {/* Icon Circle */}
+              <div 
+                className={`
+                  w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-white
+                  ${isActive 
+                    ? 'border-indigo-600 text-indigo-600 shadow-md ring-4 ring-indigo-50 scale-110' 
+                    : isCompleted 
+                      ? 'border-green-500 bg-green-500 text-white' 
+                      : 'border-slate-200 text-slate-300'
+                  }
+                `}
+              >
+                {isCompleted ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <Icon className="w-4 h-4 md:w-5 md:h-5" />}
+              </div>
+              
+              {/* Text Label */}
+              <div className="text-center flex flex-col items-center">
+                <span 
+                  className={`
+                    text-[10px] md:text-xs font-bold transition-colors duration-300 leading-tight
+                    ${isActive ? 'text-indigo-700' : isCompleted ? 'text-green-600' : 'text-slate-400'}
+                  `}
+                >
+                  {step.label}
+                </span>
+                
+                {/* Active Tip Bubble */}
+                {isActive && (
+                  <span className="hidden md:inline-block mt-1 text-[10px] text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 whitespace-nowrap animate-slide-up-sm">
+                    {step.tip}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      {/* Mobile Tip Display */}
+      <div className="md:hidden mt-4 text-center">
+         <p className="text-xs text-indigo-600 bg-indigo-100 inline-block px-3 py-1 rounded-full animate-fade-in">
+           💡 提示：{steps[currentStep]?.tip || "完成！"}
+         </p>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 🚀 主程式
+// ==========================================
+const OneSentenceApp = () => {
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [activeScenarioId, setActiveScenarioId] = useState(null);
+  const [showTips, setShowTips] = useState(false);
+  const [mode, setMode] = useState('building'); 
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0); 
+  const [currentPartIndex, setCurrentPartIndex] = useState(0); 
+  
+  // 🌟 狀態更新：分別儲存英文部分與中文部分
+  const [currentSentenceParts, setCurrentSentenceParts] = useState([]); 
+  const [currentSentenceTranslations, setCurrentSentenceTranslations] = useState([]); 
+
+  // 🌟 狀態更新：歷史紀錄現在儲存物件 { english, chinese }
+  const [fullSpeechHistory, setFullSpeechHistory] = useState([]);
+  
+  const [isProcessing, setIsProcessing] = useState(false);
+  const historyEndRef = useRef(null);
+
+  useEffect(() => {
+    historyEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [fullSpeechHistory]);
+
+  // --- 教材資料庫 ---
+  const scenarios = {
+    cafe: {
+      id: 'cafe',
+      title: '題目 1 | 咖啡店 (日常)',
+      icon: <Coffee className="w-8 h-8" />,
+      color: 'amber',
+      description: "畫面描述：一家陽光普照的咖啡店裡，一位年輕女生坐在窗邊，對面坐著一位年長男性。桌上有兩杯咖啡，兩人表情放鬆，正在聊天。",
+      sentences: [
+        {
+          id: 's1',
+          label: '第一句：描述畫面 (The Scene)',
+          subLabel: '基本句構：誰 + 在哪裡',
+          parts: [
+            { type: '開頭引導', grammarRole: 'Intro', question: '我們先用一個常見的開頭：', options: [{ text: "In this picture,", translation: "在這張圖中" }, { text: "At first glance,", translation: "乍看之下" }, { text: "Looking at the photo,", translation: "看著這張照片" }] },
+            { type: '主詞 (Who)', grammarRole: 'Subject', question: '圖片中主要的人物是誰？', options: [{ text: "I see a young woman", translation: "我看見一位年輕女子" }, { text: "there is a student", translation: "有一位學生" }, { text: "I notice a lonely girl", translation: "我注意到一位孤單的女孩" }, { text: "I see a waitress", translation: "我看見一位女服務生" }] },
+            { type: '情境/地點 (Where)', grammarRole: 'Place/Context', question: '她在哪裡？環境如何？', options: [{ text: "sitting in a sunny cafe.", translation: "坐在陽光普照的咖啡廳" }, { text: "standing in a busy shop.", translation: "站在忙碌的商店" }, { text: "studying in a library.", translation: "在圖書館讀書" }] }
+          ]
+        },
+        {
+          id: 's2',
+          label: '第二句：發揮想像 (Imagination)',
+          subLabel: '複合句構：連接詞 + 推測 + 動作',
+          parts: [
+             { type: '連接詞', grammarRole: 'Connect', question: '連接下一句...', options: [{ text: "She sits opposite a man", translation: "她坐在一位男士對面" }, { text: "She is alone", translation: "她獨自一人" }] },
+             { type: '推測', grammarRole: 'Guess', question: '關係是？', options: [{ text: "and I imagine they are father and daughter", translation: "我想像是父女" }, { text: "and they look like strangers", translation: "像是陌生人" }] },
+             { type: '動作', grammarRole: 'Action', question: '正在做什麼？', options: [{ text: "having a nice chat.", translation: "愉快地聊天" }, { text: "fighting.", translation: "吵架" }] }
+          ]
+        },
+        {
+            id: 's3',
+            label: '第三句：描述感受 (Feelings)',
+            subLabel: '描述句構：主詞 + 形容詞',
+            parts: [
+                { type: '主詞', grammarRole: 'Subject', question: '他們看起來...', options: [{ text: "They look", translation: "他們看起來" }, { text: "They feel", translation: "他們感覺" }] },
+                { type: '形容詞', grammarRole: 'Adjective', question: '氣氛如何？', options: [{ text: "relaxed and happy", translation: "放鬆且快樂" }, { text: "nervous", translation: "緊張" }] },
+                { type: '原因', grammarRole: 'Reason', question: '為什麼？', options: [{ text: "enjoying the coffee.", translation: "享受咖啡" }, { text: "wanting to leave.", translation: "想離開" }] }
+            ]
+        },
+        {
+            id: 's4',
+            label: '第四句：總結 (Conclusion)',
+            subLabel: '總結句構：啟發 + 觀點',
+            parts: [
+                { type: '開頭', grammarRole: 'Opener', question: '總結來說...', options: [{ text: "This picture reminds me", translation: "這張圖提醒我" }, { text: "I think", translation: "我想" }] },
+                { type: '主題', grammarRole: 'Topic', question: '什麼很重要？', options: [{ text: "family time", translation: "家庭時光" }, { text: "money", translation: "金錢" }] },
+                { type: '價值', grammarRole: 'Value', question: '價值是？', options: [{ text: "is precious.", translation: "很珍貴" }, { text: "is boring.", translation: "很無聊" }] }
+            ]
+        }
+      ]
+    },
+    bus: {
+      id: 'bus',
+      title: '題目 2 | 公車站 (情緒)',
+      icon: <CloudRain className="w-8 h-8" />,
+      color: 'blue',
+      description: "畫面描述：下雨天，一位男子撐著傘站在公車站，旁邊有一位小女孩背著書包。雖然天氣陰雨，但兩人靠得很近，感覺很溫馨。",
+      sentences: [
+        {
+          id: 's1',
+          label: '第一句：描述畫面 (The Scene)',
+          subLabel: '基本句構：背景 + 主詞 + 動作 + 地點',
+          parts: [
+            { type: '背景 (Setting)', grammarRole: 'Time/Weather', question: '首先描述天氣與地點', options: [{ text: "On a rainy day,", translation: "在一個下雨天" }, { text: "On a sunny day,", translation: "在一個晴天" }] },
+            { type: '人物 (Who)', grammarRole: 'Subject', question: '你看見了誰？', options: [{ text: "a man and a little girl", translation: "一位男子和小女孩" }, { text: "two boys", translation: "兩個男孩" }] },
+            { type: '動作 (Action)', grammarRole: 'Verb + Place', question: '他們在做什麼？', options: [{ text: "are waiting at a bus stop.", translation: "正在公車站等車" }, { text: "are playing.", translation: "正在玩" }] }
+          ]
+        },
+         {
+          id: 's2',
+          label: '第二句：發揮想像 (Imagination)',
+          subLabel: '基本句構：推測 + 細節',
+          parts: [
+            { type: '細節', grammarRole: 'Detail', question: '看動作...', options: [{ text: "The man holds an umbrella", translation: "男子拿著傘" }, { text: "They have no umbrella", translation: "他們沒傘" }] },
+            { type: '推測', grammarRole: 'Guess', question: '這代表...', options: [{ text: "trying to protect her.", translation: "試圖保護她" }, { text: "ignoring her.", translation: "不理她" }] },
+            { type: '關係', grammarRole: 'Relation', question: '關係是...', options: [{ text: "They seem like family.", translation: "他們看起來像家人" }, { text: "They are strangers.", translation: "他們是陌生人" }] }
+          ]
+        },
+        {
+          id: 's3',
+          label: '第三句：感受 (Feelings)',
+          subLabel: '基本句構：雖然...但是...',
+          parts: [
+             { type: '轉折', grammarRole: 'Contrast', question: '雖然...', options: [{ text: "Even though it rains,", translation: "雖然下雨" }, { text: "Because it is hot,", translation: "因為很熱" }] },
+             { type: '主詞', grammarRole: 'Subject', question: '他們感覺...', options: [{ text: "they feel warm", translation: "他們感到溫暖" }, { text: "they feel cold", translation: "他們感到冷" }] },
+             { type: '原因', grammarRole: 'Reason', question: '因為...', options: [{ text: "being together.", translation: "在一起" }, { text: "being alone.", translation: "獨自一人" }] }
+          ]
+        },
+        {
+          id: 's4',
+          label: '第四句：總結 (Conclusion)',
+          subLabel: '總結句構：心得',
+          parts: [
+             { type: '開頭', grammarRole: 'Intro', question: '這讓我想到...', options: [{ text: "This shows that", translation: "這顯示了" }, { text: "I dislike", translation: "我不喜歡" }] },
+             { type: '核心', grammarRole: 'Core', question: '什麼力量？', options: [{ text: "love warms everything.", translation: "愛溫暖一切" }, { text: "rain is wet.", translation: "雨是濕的" }] },
+             { type: '結尾', grammarRole: 'Ending', question: '感受...', options: [{ text: "It is touching.", translation: "很感人" }, { text: "It is sad.", translation: "很難過" }] }
+          ]
+        }
+      ]
+    },
+    // 🌟 新增題目 3: 餐廳約會
+    date: {
+      id: 'date',
+      title: '題目 3 | 餐廳約會 (互動)',
+      icon: <Heart className="w-8 h-8" />,
+      color: 'pink',
+      description: "畫面描述：一對男女在氣氛溫馨的餐廳裡用餐，桌上有美食與紅酒。兩人相談甚歡，笑得很開心，氣氛看起來非常浪漫。",
+      sentences: [
+        {
+          id: 's1',
+          label: '第一句：描述畫面 (The Scene)',
+          subLabel: '基本句構：誰 + 在哪裡',
+          parts: [
+            { type: '開頭引導', grammarRole: 'Intro', question: '我們從場景開始：', options: [{ text: "In a cozy restaurant,", translation: "在一間舒適的餐廳裡" }, { text: "In a noisy bar,", translation: "在一間吵雜的酒吧裡" }, { text: "Outside a shop,", translation: "在一間店外面" }] },
+            { type: '主詞 (Who)', grammarRole: 'Subject', question: '你看見了誰？', options: [{ text: "a couple is sitting", translation: "一對情侶坐著" }, { text: "two colleagues are standing", translation: "兩位同事站著" }, { text: "a family is eating", translation: "一個家庭在吃飯" }] },
+            { type: '地點細節 (Where)', grammarRole: 'Detail', question: '他們坐在哪？', options: [{ text: "at a table with food and wine.", translation: "在有食物和酒的桌邊" }, { text: "near the exit.", translation: "在出口附近" }] }
+          ]
+        },
+        {
+          id: 's2',
+          label: '第二句：發揮想像 (Imagination)',
+          subLabel: '複合句構：動作 + 推測',
+          parts: [
+            { type: '動作', grammarRole: 'Action', question: '他們正在做什麼？', options: [{ text: "They are laughing and talking,", translation: "他們正在說笑" }, { text: "They are looking at phones,", translation: "他們正在看手機" }] },
+            { type: '連接詞', grammarRole: 'Link', question: '連接你的想法...', options: [{ text: "and I imagine", translation: "我想像" }, { text: "but I think", translation: "但我認為" }] },
+            { type: '推測', grammarRole: 'Guess', question: '他們在慶祝什麼？', options: [{ text: "they are on a date.", translation: "他們在約會" }, { text: "they are having a meeting.", translation: "他們在開會" }] }
+          ]
+        },
+        {
+          id: 's3',
+          label: '第三句：描述感受 (Feelings)',
+          subLabel: '描述句構：主詞 + 形容詞',
+          parts: [
+            { type: '主詞', grammarRole: 'Subject', question: '看著他們...', options: [{ text: "They look", translation: "他們看起來" }, { text: "They seem", translation: "他們似乎" }] },
+            { type: '形容詞', grammarRole: 'Adjective', question: '感覺如何？', options: [{ text: "very happy and romantic", translation: "非常快樂且浪漫" }, { text: "bored and tired", translation: "無聊且疲憊" }] },
+            { type: '狀態', grammarRole: 'State', question: '沈浸在...', options: [{ text: "enjoying each other's company.", translation: "享受彼此的陪伴" }, { text: "waiting for the bill.", translation: "等待帳單" }] }
+          ]
+        },
+        {
+          id: 's4',
+          label: '第四句：總結 (Conclusion)',
+          subLabel: '總結句構：啟發',
+          parts: [
+            { type: '開頭', grammarRole: 'Opener', question: '這讓我想到...', options: [{ text: "This reminds me that", translation: "這提醒了我" }, { text: "I don't think", translation: "我不認為" }] },
+            { type: '主題', grammarRole: 'Topic', question: '關於相處...', options: [{ text: "spending time with loved ones", translation: "與愛人共度時光" }, { text: "eating alone", translation: "獨自吃飯" }] },
+            { type: '觀點', grammarRole: 'View', question: '是怎麼樣的？', options: [{ text: "is wonderful.", translation: "是很美好的" }, { text: "is a waste of time.", translation: "是浪費時間" }] }
+          ]
+        }
+      ]
+    },
+    // 🌟 新增題目 4: 便利商店
+    store: {
+      id: 'store',
+      title: '題目 4 | 便利商店 (選擇)',
+      icon: <ShoppingBasket className="w-8 h-8" />,
+      color: 'emerald',
+      description: "畫面描述：一位女生在便利商店的貨架前，手裡拿著一瓶牛奶正在仔細查看標籤。貨架上擺滿了各種零食。",
+      sentences: [
+        {
+          id: 's1',
+          label: '第一句：描述畫面 (The Scene)',
+          subLabel: '基本句構：地點 + 人物 + 動作',
+          parts: [
+             { type: '地點 (Where)', grammarRole: 'Place', question: '在哪裡？', options: [{ text: "In a bright convenience store,", translation: "在一間明亮的便利商店" }, { text: "In a dark room,", translation: "在一間暗房" }] },
+             { type: '人物 (Who)', grammarRole: 'Subject', question: '是誰？', options: [{ text: "a woman is standing", translation: "一位女子站著" }, { text: "a child is running", translation: "一個小孩跑著" }] },
+             { type: '動作 (Action)', grammarRole: 'Verb', question: '在做什麼？', options: [{ text: "looking at a bottle of milk.", translation: "看著一瓶牛奶" }, { text: "buying a newspaper.", translation: "買報紙" }] }
+          ]
+        },
+        {
+          id: 's2',
+          label: '第二句：發揮想像 (Imagination)',
+          subLabel: '複合句構：細節 + 推測',
+          parts: [
+             { type: '細節', grammarRole: 'Detail', question: '她正在做什麼細節動作？', options: [{ text: "She is reading the label,", translation: "她正在讀標籤" }, { text: "She is drinking it,", translation: "她正在喝" }] },
+             { type: '連接詞', grammarRole: 'Link', question: '所以我猜...', options: [{ text: "and I guess", translation: "所以我猜" }, { text: "but I doubt", translation: "但我懷疑" }] },
+             { type: '推測', grammarRole: 'Guess', question: '她在確認什麼？', options: [{ text: "she is checking the expiry date.", translation: "她在確認有效期限" }, { text: "she is looking for the price.", translation: "她在找價格" }] }
+          ]
+        },
+        {
+          id: 's3',
+          label: '第三句：描述感受 (Feelings)',
+          subLabel: '描述句構：主詞 + 形容詞',
+          parts: [
+             { type: '主詞', grammarRole: 'Subject', question: '她的表情...', options: [{ text: "She looks", translation: "她看起來" }, { text: "She sounds", translation: "她聽起來" }] },
+             { type: '形容詞', grammarRole: 'Adjective', question: '是怎樣的？', options: [{ text: "serious and focused", translation: "嚴肅且專注" }, { text: "angry and loud", translation: "生氣且大聲" }] },
+             { type: '補充', grammarRole: 'Context', question: '關於什麼？', options: [{ text: "on making a choice.", translation: "在做選擇" }, { text: "on leaving the store.", translation: "在離開商店" }] }
+          ]
+        },
+        {
+          id: 's4',
+          label: '第四句：總結 (Conclusion)',
+          subLabel: '總結句構：觀點',
+          parts: [
+             { type: '開頭', grammarRole: 'Opener', question: '這個畫面顯示...', options: [{ text: "This shows that", translation: "這顯示了" }, { text: "I wonder if", translation: "我想知道是否" }] },
+             { type: '主題', grammarRole: 'Topic', question: '關於日常...', options: [{ text: "we should pay attention to", translation: "我們應該注意" }, { text: "we can ignore", translation: "我們可以忽略" }] },
+             { type: '受詞', grammarRole: 'Object', question: '什麼事情？', options: [{ text: "what we eat.", translation: "我們吃什麼" }, { text: "the music.", translation: "音樂" }] }
+          ]
+        }
+      ]
+    },
+    // 🌟 新增題目 5: 家庭購物
+    family: {
+      id: 'family',
+      title: '題目 5 | 家庭購物 (歡樂)',
+      icon: <ShoppingBag className="w-8 h-8" />,
+      color: 'orange',
+      description: "畫面描述：一家四口走在街道上，每個人手裡都提著購物袋，臉上掛著燦爛的笑容，看起來剛結束一場愉快的購物之旅。",
+      sentences: [
+        {
+          id: 's1',
+          label: '第一句：描述畫面 (The Scene)',
+          subLabel: '基本句構：地點 + 人物 + 動作',
+          parts: [
+            { type: '地點', grammarRole: 'Place', question: '在什麼地方？', options: [{ text: "On a beautiful street,", translation: "在一條美麗的街道上" }, { text: "In a dark alley,", translation: "在一條暗巷裡" }] },
+            { type: '人物', grammarRole: 'Subject', question: '有誰？', options: [{ text: "a family of four", translation: "一家四口" }, { text: "a group of students", translation: "一群學生" }] },
+            { type: '動作', grammarRole: 'Action', question: '在做什麼？', options: [{ text: "is walking together.", translation: "正走在一起" }, { text: "is running away.", translation: "正跑走" }] }
+          ]
+        },
+        {
+          id: 's2',
+          label: '第二句：發揮想像 (Imagination)',
+          subLabel: '複合句構：細節 + 想像',
+          parts: [
+            { type: '細節', grammarRole: 'Detail', question: '他們手裡拿著？', options: [{ text: "They are holding shopping bags,", translation: "他們提著購物袋" }, { text: "They are holding books,", translation: "他們拿著書" }] },
+            { type: '連接詞', grammarRole: 'Link', question: '所以我猜...', options: [{ text: "and I imagine", translation: "我想像" }, { text: "but I feel", translation: "但我感覺" }] },
+            { type: '推測', grammarRole: 'Guess', question: '發生了什麼事？', options: [{ text: "they bought many gifts.", translation: "他們買了很多禮物" }, { text: "they lost their way.", translation: "他們迷路了" }] }
+          ]
+        },
+        {
+          id: 's3',
+          label: '第三句：描述感受 (Feelings)',
+          subLabel: '描述句構：主詞 + 形容詞',
+          parts: [
+            { type: '主詞', grammarRole: 'Subject', question: '他們的感覺...', options: [{ text: "They feel", translation: "他們感覺" }, { text: "They look", translation: "他們看起來" }] },
+            { type: '形容詞', grammarRole: 'Adjective', question: '是怎樣的？', options: [{ text: "excited and full of joy", translation: "興奮且充滿喜悅" }, { text: "tired and hungry", translation: "累且餓" }] },
+            { type: '原因', grammarRole: 'Reason', question: '因為...', options: [{ text: "after the shopping.", translation: "在購物之後" }, { text: "before school.", translation: "在上學前" }] }
+          ]
+        },
+        {
+          id: 's4',
+          label: '第四句：總結 (Conclusion)',
+          subLabel: '總結句構：個人觀點',
+          parts: [
+             { type: '開頭', grammarRole: 'Opener', question: '我認為...', options: [{ text: "I think", translation: "我認為" }, { text: "I suspect", translation: "我懷疑" }] },
+             { type: '主題', grammarRole: 'Topic', question: '什麼是最棒的？', options: [{ text: "family time", translation: "家庭時光" }, { text: "shopping alone", translation: "獨自購物" }] },
+             { type: '結論', grammarRole: 'Conclusion', question: '是什麼？', options: [{ text: "is the best time.", translation: "是最棒的時光" }, { text: "is expensive.", translation: "很昂貴" }] }
+          ]
+        }
+      ]
+    }
+  };
+
+  // 🌟 修改：接收整個 option 物件
+  const handleOptionSelect = (option) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+
+    // 1. 更新英文部分
+    const newParts = [...currentSentenceParts, option.text];
+    setCurrentSentenceParts(newParts);
+    
+    // 2. 更新中文部分
+    const newTranslations = [...currentSentenceTranslations, option.translation];
+    setCurrentSentenceTranslations(newTranslations);
+
+    const currentScenario = scenarios[activeScenarioId];
+    const sentenceConfig = currentScenario.sentences[currentSentenceIndex];
+
+    if (currentPartIndex < sentenceConfig.parts.length - 1) {
+      setCurrentPartIndex(prev => prev + 1);
+      setTimeout(() => setIsProcessing(false), 300);
+    } else {
+      setTimeout(() => {
+        setMode('review'); 
+        setIsProcessing(false);
+      }, 500);
+    }
+  };
+
+  // 🌟 修改：Undo 時同時退回中英文
+  const handleUndo = () => {
+    if (isProcessing) return;
+
+    if (currentPartIndex > 0) {
+      // 退回上一個 Part
+      const newParts = currentSentenceParts.slice(0, -1);
+      setCurrentSentenceParts(newParts);
+      
+      const newTrans = currentSentenceTranslations.slice(0, -1);
+      setCurrentSentenceTranslations(newTrans);
+      
+      setCurrentPartIndex(prev => prev - 1);
+      setMode('building');
+    } 
+    else if (currentSentenceIndex > 0) {
+      // 退回上一句
+      const prevSentenceIndex = currentSentenceIndex - 1;
+      setCurrentSentenceIndex(prevSentenceIndex);
+      
+      // 從歷史紀錄移除最後一句
+      const newHistory = fullSpeechHistory.slice(0, -1);
+      setFullSpeechHistory(newHistory);
+      
+      // 清空當前暫存
+      setCurrentSentenceParts([]); 
+      setCurrentSentenceTranslations([]); 
+      setCurrentPartIndex(0); 
+      setMode('building');
+    }
+  };
+
+  // 🌟 修改：Next Sentence 時組合中英文並存入歷史
+  const handleNextSentence = () => {
+    const completedEnglish = currentSentenceParts.join(" ");
+    const completedChinese = currentSentenceTranslations.join(""); // 中文不加空格
+
+    const newHistoryItem = { english: completedEnglish, chinese: completedChinese };
+    const newHistory = [...fullSpeechHistory, newHistoryItem];
+    setFullSpeechHistory(newHistory);
+
+    const currentScenario = scenarios[activeScenarioId];
+    if (currentSentenceIndex < currentScenario.sentences.length - 1) {
+      setCurrentSentenceIndex(prev => prev + 1);
+      setCurrentPartIndex(0);
+      setCurrentSentenceParts([]);
+      setCurrentSentenceTranslations([]);
+      setMode('building');
+    } else {
+      setMode('finished');
+    }
+  };
+
+  const resetAll = () => {
+    setActiveScenarioId(null);
+    setShowTips(false);
+    setMode('building');
+    setCurrentSentenceIndex(0);
+    setCurrentPartIndex(0);
+    setCurrentSentenceParts([]);
+    setCurrentSentenceTranslations([]);
+    setFullSpeechHistory([]);
+    setIsProcessing(false);
+  };
+
+  if (showTutorial) {
+    return <TutorialView onFinish={() => setShowTutorial(false)} />;
+  }
+
+  if (!activeScenarioId) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6 flex flex-col items-center justify-center space-y-8 animate-fade-in">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold text-slate-800">單句專注造句法</h1>
+          <p className="text-slate-500">透過「句型藍圖」，學會英文句子的邏輯。</p>
+        </div>
+
+        <div className="w-full max-w-2xl bg-indigo-600 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 hover:shadow-xl transition-shadow cursor-pointer group" onClick={() => setShowTutorial(true)}>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
+               <BookOpen className="w-8 h-8" />
+            </div>
+            <div className="text-left">
+              <h2 className="text-xl font-bold">課前導讀：英文造句的黃金順序</h2>
+              <p className="text-indigo-100 text-sm mt-1">約 20 分鐘 | 適合初學者建立觀念</p>
+            </div>
+          </div>
+          <button 
+            className="px-6 py-2 bg-white text-indigo-600 rounded-full font-bold hover:bg-indigo-50 transition-colors whitespace-nowrap flex items-center gap-2"
+          >
+            <Play className="w-4 h-4 fill-current" /> 開始上課
+          </button>
+        </div>
+
+        <div className="w-full max-w-2xl">
+          <h3 className="text-slate-400 font-bold text-sm uppercase tracking-wider mb-4 text-center">選擇練習情境</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {Object.values(scenarios).map(s => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setActiveScenarioId(s.id);
+                  setShowTips(true);
+                }}
+                className={`flex flex-col items-center p-8 bg-white rounded-2xl border-2 border-transparent hover:border-${s.color}-400 hover:shadow-lg transition-all group`}
+              >
+                <div className={`p-4 rounded-full bg-${s.color}-50 text-${s.color}-600 mb-4 group-hover:scale-110 transition-transform`}>
+                  {s.icon}
+                </div>
+                <h3 className="text-xl font-bold text-slate-700">{s.title}</h3>
+                <span className="text-sm text-slate-400 mt-2 flex items-center gap-1 group-hover:text-${s.color}-500">
+                   點擊開始 <ArrowRight className="w-3 h-3" />
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showTips) {
+    return <TipsView onNext={() => setShowTips(false)} />;
+  }
+
+  // 🌟 修改：完成頁面顯示中英文
+  if (mode === 'finished') {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6 flex flex-col items-center justify-center animate-fade-in">
+        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8 space-y-8 text-center">
+          <div className="inline-flex p-4 rounded-full bg-green-100 text-green-600 mb-2">
+            <CheckCircle className="w-10 h-10" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-slate-800 mb-2">挑戰成功！</h2>
+            <p className="text-slate-500">這是你依照句型邏輯組出的完整講稿：</p>
+          </div>
+          
+          <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-left space-y-6">
+             {fullSpeechHistory.map((item, idx) => (
+               <div key={idx} className="border-b border-slate-100 pb-4 last:border-0 last:pb-0">
+                 <p className="text-lg text-slate-700 leading-relaxed font-medium">
+                   <span className="font-bold text-slate-300 mr-2">{idx + 1}.</span> {item.english}
+                 </p>
+                 <p className="text-slate-500 text-sm mt-1 pl-8">
+                   {item.chinese}
+                 </p>
+               </div>
+             ))}
+          </div>
+
+          <button onClick={resetAll} className="px-8 py-3 bg-slate-800 text-white rounded-full hover:bg-slate-700 transition-colors flex items-center gap-2 mx-auto font-bold shadow-lg hover:shadow-xl">
+            <RefreshCw className="w-4 h-4" /> 再練習一次
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentScenario = scenarios[activeScenarioId];
+  const sentenceConfig = currentScenario.sentences[currentSentenceIndex];
+  const currentPart = sentenceConfig.parts[currentPartIndex];
+  const canUndo = currentPartIndex > 0 || currentSentenceIndex > 0;
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col">
+      <div className="bg-white px-4 py-3 shadow-sm border-b border-slate-200 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto flex justify-between items-center">
+          <button onClick={resetAll} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕ 退出</button>
+          <span className="text-slate-500 font-bold text-sm">Step {currentSentenceIndex + 1}</span>
+        </div>
+      </div>
+
+      <div className="flex-1 max-w-3xl mx-auto w-full p-4 lg:p-6 flex flex-col space-y-6 pb-20">
+        
+        {/* 圖片情境區 */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex gap-4 items-start animate-fade-in">
+           <div className={`p-3 rounded-lg bg-${currentScenario.color}-50 text-${currentScenario.color}-600 shrink-0 hidden sm:block`}>
+             <ImageIcon className="w-6 h-6" />
+           </div>
+           <div>
+             <h3 className="font-bold text-slate-700 mb-1 flex items-center gap-2">
+               <span className="sm:hidden text-indigo-500"><ImageIcon className="w-4 h-4"/></span> 
+               圖片情境
+             </h3>
+             <p className="text-slate-600 text-sm leading-relaxed">
+               {currentScenario.description}
+             </p>
+           </div>
+        </div>
+
+        {/* 🌟 修改：歷史紀錄顯示中英文 */}
+        {fullSpeechHistory.length > 0 && (
+          <div className="bg-slate-100 rounded-xl p-5 border border-slate-200 animate-slide-up">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <BookOpen className="w-3 h-3" /> 你的演講稿累積中...
+            </h3>
+            <div className="space-y-3">
+              {fullSpeechHistory.map((item, idx) => (
+                <div key={idx} className="flex gap-2 text-slate-600 animate-fade-in items-start">
+                  <span className="font-bold text-slate-300 select-none mt-0.5">{idx + 1}.</span>
+                  <div>
+                     <p className="font-medium">{item.english}</p>
+                     <p className="text-xs text-slate-400 mt-0.5">{item.chinese}</p>
+                  </div>
+                </div>
+              ))}
+              <div ref={historyEndRef} />
+            </div>
+          </div>
+        )}
+
+        <hr className="border-slate-100" />
+        
+        <StoryFlow currentStep={currentSentenceIndex} />
+
+        {/* 互動造句區 */}
+        <div className="space-y-6">
+          <div className="text-center space-y-1 animate-slide-up">
+            <h2 className="text-xl font-bold text-slate-800">{sentenceConfig.label}</h2>
+            <p className="text-slate-500 text-sm flex items-center justify-center gap-1">
+              <Lightbulb className="w-3 h-3 text-amber-500" />
+              {sentenceConfig.subLabel}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2 lg:gap-4 mb-4 select-none">
+            {sentenceConfig.parts.map((part, idx) => {
+              const isActive = idx === currentPartIndex && mode === 'building';
+              const isDone = idx < currentPartIndex || mode === 'review';
+              
+              return (
+                <div key={idx} className="flex items-center gap-2">
+                  <div className={`
+                    px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5
+                    ${isActive 
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md scale-105' 
+                      : isDone 
+                        ? 'bg-green-50 text-green-700 border-green-200' 
+                        : 'bg-white text-slate-300 border-slate-200'
+                    }
+                  `}>
+                    {isDone ? <CheckCircle className="w-3 h-3" /> : <span className="w-3 h-3 flex items-center justify-center rounded-full bg-current opacity-20 text-[8px]">{idx + 1}</span>}
+                    {part.type}
+                  </div>
+                  {idx < sentenceConfig.parts.length - 1 && (
+                    <ArrowRight className={`w-3 h-3 ${isDone ? 'text-green-300' : 'text-slate-200'}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className={`rounded-2xl p-6 lg:p-8 shadow-sm border min-h-[120px] flex flex-wrap items-center justify-center content-center gap-2 text-lg lg:text-xl transition-all relative overflow-hidden
+            ${mode === 'review' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}
+          `}>
+            {mode === 'review' && (
+              <div className="absolute top-0 right-0 bg-green-100 text-green-600 px-3 py-1 rounded-bl-xl font-bold text-xs flex items-center gap-1 animate-fade-in">
+                <CheckCircle className="w-3 h-3" /> 完成
+              </div>
+            )}
+
+            {currentSentenceParts.length === 0 && (
+              <span className="text-slate-300 italic">準備開始...</span>
+            )}
+
+            {currentSentenceParts.map((text, i) => (
+              <span key={i} className="animate-fade-in font-medium text-slate-800">
+                {text}
+              </span>
+            ))}
+
+            {mode === 'building' && (
+              <span className="w-2 h-6 bg-indigo-500 animate-pulse rounded-full ml-1"></span>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center h-6">
+             <div className="flex items-center gap-2">
+               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                 {mode === 'building' ? '現在請選擇：' : '確認與下一步：'}
+               </span>
+               {mode === 'building' && (
+                  <span className="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                    {currentPart.grammarRole}
+                  </span>
+               )}
+             </div>
+             
+             <button 
+              onClick={handleUndo}
+              disabled={!canUndo || isProcessing}
+              className={`flex items-center gap-1 text-sm px-3 py-1 rounded-full transition-colors
+                ${canUndo 
+                  ? 'text-slate-500 hover:bg-slate-200 hover:text-slate-700' 
+                  : 'text-slate-300 cursor-not-allowed'}
+              `}
+            >
+              <Undo2 className="w-4 h-4" /> 
+              {currentPartIndex === 0 && currentSentenceIndex > 0 ? "回上一句" : "上一步"}
+            </button>
+          </div>
+
+          {mode === 'building' ? (
+            <div className="space-y-2 animate-slide-up-delay">
+               <p className="text-sm font-medium text-slate-700 mb-2 pl-1 flex items-center gap-2">
+                 <Layers className="w-4 h-4 text-slate-400" />
+                 {currentPart.question}
+               </p>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {currentPart.options.map((option, idx) => (
+                  <button
+                    key={idx}
+                    disabled={isProcessing}
+                    // 🌟 修改：傳遞整個 option 物件
+                    onClick={() => handleOptionSelect(option)}
+                    className={`group text-left p-4 bg-white rounded-xl border transition-all active:scale-[0.98]
+                      ${isProcessing ? 'opacity-50 cursor-wait border-slate-100' : 'border-slate-200 hover:border-indigo-500 hover:shadow-md cursor-pointer'}
+                    `}
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="font-bold text-base text-slate-700 group-hover:text-indigo-600">
+                        {option.text}
+                      </span>
+                      <span className="text-xs text-slate-400 group-hover:text-slate-500">
+                        {option.translation}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="animate-fade-in">
+               <button 
+                 onClick={handleNextSentence}
+                 className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+               >
+                 進入下一句 <ArrowRight className="w-5 h-5" />
+               </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default OneSentenceApp;
